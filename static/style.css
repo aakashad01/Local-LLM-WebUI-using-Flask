@@ -1,0 +1,173 @@
+/* ─── Reset & Base ─────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: "Segoe UI", Roboto, sans-serif;
+  color: #333;
+  height: 100vh;
+  display: flex;
+  background-color: #f5f6f7;
+  overflow: hidden;
+}
+
+/* ─── Layout ───────────────────────────────────────────────────────────────── */
+.container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+/* ─── Sidebar ──────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 240px;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  padding: 20px 10px;
+  overflow-y: auto;
+}
+.sidebar h2 {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: #444;
+  padding-left: 8px;
+}
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.chat-link {
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #333;
+  transition: background 0.2s;
+}
+.chat-link:hover,
+.chat-link.active {
+  background: #eee;
+}
+.new-chat {
+  margin-top: 16px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #10a37f;
+  font-weight: bold;
+}
+
+/* ─── Chat Window ─────────────────────────────────────────────────────────── */
+.chat-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f9f9f9;
+}
+
+/* ─── Message History ─────────────────────────────────────────────────────── */
+.chat-history {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── Message Bubbles ─────────────────────────────────────────────────────── */
+.message {
+  max-width: 70%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.message.user {
+  background: #dcfce7;
+  align-self: flex-end;
+  border-bottom-right-radius: 0;
+}
+.message.assistant {
+  background: #e0e0e0;
+  align-self: flex-start;
+  border-bottom-left-radius: 0;
+}
+
+/* ─── Input Bar ───────────────────────────────────────────────────────────── */
+.input-container {
+  display: flex;
+  padding: 12px 16px;
+  background: #fff;
+  border-top: 1px solid #ccc;
+}
+#user_input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 15px;
+  outline: none;
+}
+button.send {
+  margin-left: 10px;
+  padding: 10px 20px;
+  background: #10a37f;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: background 0.2s ease;
+}
+button.send:hover {
+  background: #0e8f6f;
+}
+/* Hide <think> content by default */
+think {
+  display: none;
+  background: #f4f4f4;
+  padding: 8px;
+  margin-top: 6px;
+  font-style: italic;
+  border-left: 3px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95em;
+}
+
+.think-toggle {
+  margin-top: 6px;
+  margin-bottom: 4px;
+  background-color: #e0e0e0;
+  color: #333;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 5px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.think-toggle:hover {
+  background: #d0d0d0;
+}
+
+:root {
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --bubble-user: #d3f0ff;
+  --bubble-assistant: #f0f0f0;
+}
+
+body.dark {
+  --bg-color: #121212;
+  --text-color: #e0e0e0;
+  --bubble-user: #003f5c;
+  --bubble-assistant: #1f1f1f;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
