@@ -2,82 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ChatGPT-Style Local AI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Local ChatGPT</title>
+
+  <!-- Prism.js for code highlighting -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs/themes/prism-tomorrow.css" />
+
+  <!-- Your CSS -->
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </head>
 <body data-session-id="{{ session_id }}">
+
   <div class="container">
 
-    <!-- Sidebar -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
-      <h2>Conversations</h2>
-      <nav>
+      <div class="sidebar-header">
+        <h2>Sessions</h2>
+        <button class="toggle-theme" onclick="toggleTheme()">🌓</button>
+      </div>
+      <ul class="chat-sessions">
         {% for sid in all_chats %}
-          <a href="{{ url_for('index', session_id=sid) }}"
-             class="chat-link {% if sid == session_id %}active{% endif %}">
-            {{ sid[:8] }}
-          </a>
+          <li class="{% if sid == session_id %}active{% endif %}">
+            <a href="{{ url_for('index', session_id=sid) }}">{{ sid[:8] }}…</a>
+            <button class="rename-btn" onclick="renameSession('{{ sid }}')">✎</button>
+            <button class="delete-btn" onclick="deleteSession('{{ sid }}')">🗑️</button>
+          </li>
         {% endfor %}
-        <a href="{{ url_for('index', session_id='new') }}" class="new-chat">
-          + New Chat
-        </a>
-      </nav>
+      </ul>
+      <button class="new-chat" onclick="window.location.href='/?session_id=new'">+ New Chat</button>
     </aside>
 
-    <!-- Chat Area -->
-    <section class="chat-window">
-
-      <!-- Message History -->
-      <div id="chat" class="chat-history">
+    <!-- CHAT AREA -->
+    <main class="chat-area">
+      <div id="chat" class="chat-window">
         {% for msg in chat %}
           <div class="message {{ msg.role }}">
-            {{ msg.content | safe }}
+            <div class="assistant-text">{{ msg.content | safe }}</div>
           </div>
         {% endfor %}
       </div>
 
-      <!-- Input Bar -->
-      <form id="chat-form" class="input-container">
-        <input
-          type="text"
-          id="user_input"
-          placeholder="Type your message..."
-          autocomplete="off"
-          required
-        />
-        <button type="submit" class="send">Send</button>
+      <form id="chat-form" class="input-bar">
+        <input type="text" id="user_input" placeholder="Type a message…" autocomplete="off" required />
+        <button type="submit">Send</button>
       </form>
+    </main>
 
-    </section>
-    <!-- After everything is rendered, convert <think> tags -->
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-        // Find all <think> elements
-            document.querySelectorAll("think").forEach(el => {
-                // Create the toggle button
-                const btn = document.createElement("button");
-                btn.textContent = "Show Thought";
-                btn.className = "think-toggle";
-
-                // Insert button before the <think> content
-                el.parentNode.insertBefore(btn, el);
-
-                // Toggle on click
-                btn.addEventListener("click", () => {
-                if (el.style.display === "none") {
-                    el.style.display = "block";
-                    btn.textContent = "Hide Thought";
-                } else {
-                    el.style.display = "none";
-                    btn.textContent = "Show Thought";
-                }
-                });
-            });
-        });
-    </script>
   </div>
+
+  <!-- JS Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs/prism.js"></script>
+
+  <!-- Your JS -->
+  <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </body>
 </html>

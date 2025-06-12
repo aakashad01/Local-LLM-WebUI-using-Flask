@@ -6,11 +6,31 @@
 }
 body {
   font-family: "Segoe UI", Roboto, sans-serif;
-  color: #333;
   height: 100vh;
   display: flex;
-  background-color: #f5f6f7;
   overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+/* ─── Theming Variables ────────────────────────────────────────────────────── */
+:root {
+  --bg: #f5f6f7;
+  --fg: #333;
+  --bg-sidebar: #ffffff;
+  --bg-chat: #f9f9f9;
+  --bg-user: #dcfce7;
+  --bg-assistant: #e0e0e0;
+  --border: #ccc;
+}
+body.dark {
+  --bg: #181a1b;
+  --fg: #e0e0e0;
+  --bg-sidebar: #202224;
+  --bg-chat: #111214;
+  --bg-user: #3a3f41;
+  --bg-assistant: #2a2c2e;
+  --border: #444;
 }
 
 /* ─── Layout ───────────────────────────────────────────────────────────────── */
@@ -19,56 +39,81 @@ body {
   width: 100%;
   height: 100%;
 }
-
-/* ─── Sidebar ──────────────────────────────────────────────────────────────── */
 .sidebar {
   width: 240px;
-  background: #fff;
-  border-right: 1px solid #e0e0e0;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
   padding: 20px 10px;
   overflow-y: auto;
 }
-.sidebar h2 {
-  font-size: 16px;
-  margin-bottom: 16px;
-  color: #444;
-  padding-left: 8px;
-}
-.sidebar nav {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.chat-link {
-  padding: 8px 12px;
-  border-radius: 6px;
-  text-decoration: none;
-  color: #333;
-  transition: background 0.2s;
-}
-.chat-link:hover,
-.chat-link.active {
-  background: #eee;
-}
-.new-chat {
-  margin-top: 16px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  text-decoration: none;
-  color: #10a37f;
-  font-weight: bold;
-}
-
-/* ─── Chat Window ─────────────────────────────────────────────────────────── */
-.chat-window {
+.chat-area {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #f9f9f9;
+  background: var(--bg-chat);
 }
 
-/* ─── Message History ─────────────────────────────────────────────────────── */
-.chat-history {
+/* ─── Sidebar Styles ───────────────────────────────────────────────────────── */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.toggle-theme {
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  color: var(--fg);
+}
+
+.chat-sessions {
+  list-style: none;
+  margin-bottom: 12px;
+}
+.chat-sessions li {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.chat-sessions li.active a {
+  font-weight: bold;
+}
+.chat-sessions a {
+  flex-grow: 1;
+  text-decoration: none;
+  color: var(--fg);
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.chat-sessions a:hover {
+  background: var(--bg-user);
+}
+.rename-btn,
+.delete-btn {
+  background: none;
+  border: none;
+  margin-left: 4px;
+  cursor: pointer;
+  color: var(--fg);
+}
+
+.new-chat {
+  width: 100%;
+  padding: 8px;
+  margin-top: 12px;
+  background: var(--bg-user);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--fg);
+  font-weight: bold;
+}
+
+/* ─── Chat Window ──────────────────────────────────────────────────────────── */
+.chat-window {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
@@ -76,98 +121,75 @@ body {
   flex-direction: column;
   gap: 12px;
 }
-
-/* ─── Message Bubbles ─────────────────────────────────────────────────────── */
 .message {
-  max-width: 70%;
+  max-width: 75%;
   padding: 12px 16px;
   border-radius: 12px;
-  line-height: 1.5;
   word-break: break-word;
+  background: var(--bg-assistant);
 }
 .message.user {
-  background: #dcfce7;
+  background: var(--bg-user);
   align-self: flex-end;
   border-bottom-right-radius: 0;
 }
 .message.assistant {
-  background: #e0e0e0;
   align-self: flex-start;
   border-bottom-left-radius: 0;
 }
 
-/* ─── Input Bar ───────────────────────────────────────────────────────────── */
-.input-container {
+/* ─── Input Bar ────────────────────────────────────────────────────────────── */
+.input-bar {
   display: flex;
   padding: 12px 16px;
-  background: #fff;
-  border-top: 1px solid #ccc;
+  border-top: 1px solid var(--border);
+  background: var(--bg-chat);
 }
-#user_input {
+.input-bar input {
   flex: 1;
   padding: 10px 14px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 15px;
   outline: none;
+  background: var(--bg);
+  color: var(--fg);
 }
-button.send {
+.input-bar button {
   margin-left: 10px;
   padding: 10px 20px;
-  background: #10a37f;
-  color: #fff;
+  background: var(--bg-user);
+  color: var(--fg);
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 15px;
-  transition: background 0.2s ease;
+  transition: background 0.2s;
 }
-button.send:hover {
-  background: #0e8f6f;
+.input-bar button:hover {
+  background: var(--bg-assistant);
 }
-/* Hide <think> content by default */
+
+/* ─── Show-Thought & Code Blocks ───────────────────────────────────────────── */
 think {
   display: none;
-  background: #f4f4f4;
-  padding: 8px;
-  margin-top: 6px;
-  font-style: italic;
-  border-left: 3px solid #ccc;
-  border-radius: 4px;
-  font-size: 0.95em;
 }
-
 .think-toggle {
-  margin-top: 6px;
-  margin-bottom: 4px;
-  background-color: #e0e0e0;
-  color: #333;
-  border: none;
+  display: inline-block;
+  margin-top: 8px;
   padding: 4px 10px;
-  border-radius: 5px;
   font-size: 13px;
+  background: var(--bg-assistant);
+  color: var(--fg);
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
 }
-
-.think-toggle:hover {
-  background: #d0d0d0;
-}
-
-:root {
-  --bg-color: #ffffff;
-  --text-color: #000000;
-  --bubble-user: #d3f0ff;
-  --bubble-assistant: #f0f0f0;
-}
-
-body.dark {
-  --bg-color: #121212;
-  --text-color: #e0e0e0;
-  --bubble-user: #003f5c;
-  --bubble-assistant: #1f1f1f;
-}
-
-body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
+.think-block {
+  background: var(--bg-assistant);
+  color: var(--fg);
+  font-style: italic;
+  padding: 8px;
+  margin-top: 6px;
+  border-left: 4px solid var(--border);
+  white-space: pre-wrap;
 }

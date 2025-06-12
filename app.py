@@ -1,160 +1,109 @@
-import os
-import json
-import sqlite3
-import requests
-import uuid
+import os, json, sqlite3, requests, uuid
 from datetime import datetime
-from flask import (
-    Flask, render_template, request, jsonify,
-    redirect, url_for, session
-)
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session
 from dotenv import load_dotenv
+from markdown import markdown
 
-# ─── Load environment ──────────────────────────────────────────────────────────
 load_dotenv()
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
-MODEL_NAME  = os.getenv("OLLAMA_MODEL", "qwen3:1.7b")
-SECRET_KEY  = os.getenv("SECRET_KEY", "change_this_to_a_real_secret")
-DB_PATH     = "chat.db"
+MODEL_NAME = os.getenv("OLLAMA_MODEL", "qwen3:1.7b")
+SECRET_KEY = os.getenv("SECRET_KEY", "topsecretkey")
+DB_PATH = "chat.db"
 
-# ─── App Setup ─────────────────────────────────────────────────────────────────
 app = Flask(__name__)
-app.secret_key = SECRET_KEY   # ← Set your secret key here
-
-# ─── One-time DB initialization ────────────────────────────────────────────────
+app.secret_key = SECRET_KEY
 first_request = True
 
 @app.before_request
 def init_app():
     global first_request
     if first_request:
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute('''
-                CREATE TABLE IF NOT EXISTS chats (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    session_id TEXT,
-                    role TEXT,
-                    content TEXT,
-                    timestamp TEXT
-                )
-            ''')
-        print("✅ Database initialized.")
+        init_db()
         first_request = False
 
-# ─── Database helpers ─────────────────────────────────────────────────────────
+def init_db():
+    with sqlite3.connect(DB_PATH) as conn:
+        c = conn.cursor()
+        c.execute("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY, session_id TEXT, role TEXT, content TEXT, timestamp TEXT)")
+        c.execute("CREATE TABLE IF NOT EXISTS session_titles (session_id TEXT PRIMARY KEY, title TEXT)")
+        conn.commit()
+
 def save_message(session_id, role, content):
     with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO chats (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
-            (session_id, role, content, datetime.utcnow().isoformat())
-        )
+        c = conn.cursor()
+        c.execute("INSERT INTO chats (session_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
+                  (session_id, role, content, datetime.utcnow().isoformat()))
+        conn.commit()
 
 def get_chat_history(session_id):
     with sqlite3.connect(DB_PATH) as conn:
-        cur = conn.execute(
-            "SELECT role, content, timestamp FROM chats "
-            "WHERE session_id = ? ORDER BY id",
-            (session_id,)
-        )
-        return cur.fetchall()
+        c = conn.cursor()
+        c.execute("SELECT role, content, timestamp FROM chats WHERE session_id = ? ORDER BY id", (session_id,))
+        return c.fetchall()
 
-# ─── Ollama streaming ──────────────────────────────────────────────────────────
-def generate_response_stream(prompt):
-    payload = {
-        "model": MODEL_NAME,
-        "prompt": prompt,
-        "stream": True
-    }
-    resp = requests.post(
-        f"{OLLAMA_HOST}/api/generate",
-        headers={"Content-Type": "application/json"},
-        json=payload,
-        stream=True
-    )
-    full = ""
-    for line in resp.iter_lines():
-        if not line:
-            continue
-        data = json.loads(line.decode())
-        token = data.get("response", "")
-        full += token
-        yield token
-    yield "\n"  # end
-    return full
-
-# ─── Routes ────────────────────────────────────────────────────────────────────
 @app.route("/", methods=["GET"])
 def index():
     sid = request.args.get("session_id")
-
-    # Create or renew session
     if not sid or sid == "new":
-        new_sid = str(uuid.uuid4())
-        return redirect(url_for("index", session_id=new_sid))
-
+        sid = str(uuid.uuid4())
+        return redirect(url_for("index", session_id=sid))
     session["session_id"] = sid
 
-    # Load history
-    raw = get_chat_history(sid)
-    history = [
-        {"role": role, "content": content, "timestamp": ts}
-        for role, content, ts in raw
-    ]
+    history = get_chat_history(sid)
+    formatted = [{"role": r, "content": c, "timestamp": t} for r, c, t in history]
 
-    # Sidebar list
     with sqlite3.connect(DB_PATH) as conn:
-        rows = conn.execute(
-            "SELECT DISTINCT session_id FROM chats"
-        ).fetchall()
-    all_chats = [r[0] for r in rows]
+        c = conn.cursor()
+        c.execute("SELECT session_id FROM chats GROUP BY session_id ORDER BY MAX(timestamp) DESC")
+        sessions = [row[0] for row in c.fetchall()]
 
-    return render_template(
-        "index.html",
-        chat=history,
-        session_id=sid,
-        all_chats=all_chats
-    )
+    return render_template("index.html", chat=formatted, session_id=sid, all_chats=sessions)
 
 @app.route("/send", methods=["POST"])
 def send():
-    data = request.get_json()
+    data = request.json
     prompt = data["prompt"]
-    sid = data.get("session_id", session.get("session_id", "default"))
-
-    # Save user message
+    sid = data.get("session_id", "default")
     save_message(sid, "user", prompt)
 
     def generate():
-        response_accum = ""
+        yield ""
+        response = ""
         for token in generate_response_stream(prompt):
-            response_accum += token
+            response += token
             yield token
-        # Save assistant reply
-        save_message(sid, "assistant", response_accum)
-
+        save_message(sid, "assistant", response)
     return app.response_class(generate(), mimetype="text/plain")
 
-@app.route("/chats", methods=["GET"])
-def list_chats():
-    with sqlite3.connect(DB_PATH) as conn:
-        rows = conn.execute(
-            "SELECT DISTINCT session_id FROM chats"
-        ).fetchall()
-    return jsonify([r[0] for r in rows])
-@app.route("/rename_session", methods=["POST"])
+def generate_response_stream(prompt):
+    headers = {"Content-Type": "application/json"}
+    payload = {"model": MODEL_NAME, "prompt": prompt, "stream": True}
+    response = requests.post(f"{OLLAMA_HOST}/api/generate", headers=headers, json=payload, stream=True)
+    for chunk in response.iter_lines():
+        if chunk:
+            data = json.loads(chunk.decode("utf-8"))
+            yield data.get("response", "")
+    yield "\n"
+
+@app.route("/rename_session")
 def rename_session():
-    data = request.json
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("UPDATE chats SET title = ? WHERE session_id = ?", (data["new_title"], data["session_id"]))
-    return jsonify(status="ok")
+    sid = request.args.get("sid")
+    name = request.args.get("name")
+    if sid and name:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("INSERT OR REPLACE INTO session_titles (session_id, title) VALUES (?, ?)", (sid, name))
+            conn.commit()
+    return "", 204
 
-@app.route("/delete_session", methods=["POST"])
+@app.route("/delete_session")
 def delete_session():
-    data = request.json
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("DELETE FROM chats WHERE session_id = ?", (data["session_id"],))
-    return jsonify(status="deleted")
+    sid = request.args.get("sid")
+    if sid:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.execute("DELETE FROM chats WHERE session_id = ?", (sid,))
+            conn.execute("DELETE FROM session_titles WHERE session_id = ?", (sid,))
+            conn.commit()
+    return "", 204
 
-# ─── Run ───────────────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     app.run(debug=True)
